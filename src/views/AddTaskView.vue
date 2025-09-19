@@ -60,7 +60,6 @@ function clearTask() {
 
 <template>
   <div :class="$style.container">
-    <pre>{{ status }}</pre>
     <h1 :class="$style.title">タスクを追加する</h1>
     <form :class="$style.form">
       <label :class="$style.label">
