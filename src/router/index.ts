@@ -11,10 +11,11 @@ const router = createRouter({
     },
     {
       path: '/add-task',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
       component: AddTaskView,
+    },
+    {
+      path: '/tasks',
+      component: () => import('../views/taskCollectionView.vue'),
     },
   ],
 });
