@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { TaskRepository } from '@/repositories/TaskRepository';
-import { taskRepository } from '@/store';
 import { reactive, ref } from 'vue';
 
 const taskForm = reactive({
@@ -18,9 +17,10 @@ const status = ref<'idle' | 'pending' | 'success' | 'error'>('idle');
 async function addTask() {
   status.value = 'pending';
 
-  try {
-    await taskRepository.createTask(taskForm);
-  } catch (error) {
+  const taskRepository = new TaskRepository();
+  const task = await taskRepository.createTask(taskForm);
+
+  if (!task) {
     status.value = 'error';
     return;
   }
