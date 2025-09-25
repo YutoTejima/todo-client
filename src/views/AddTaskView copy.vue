@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { TaskRepository } from '@/repositories/TaskRepository';
-import { taskRepository } from '@/store';
 import { reactive, ref } from 'vue';
 
 const taskForm = reactive({
@@ -18,9 +17,10 @@ const status = ref<'idle' | 'pending' | 'success' | 'error'>('idle');
 async function addTask() {
   status.value = 'pending';
 
-  try {
-    await taskRepository.createTask(taskForm);
-  } catch (error) {
+  const taskRepository = new TaskRepository();
+  const task = await taskRepository.createTask(taskForm);
+
+  if (!task) {
     status.value = 'error';
     return;
   }
@@ -84,6 +84,11 @@ function clearTask() {
         <input type="date" :class="$style.input" v-model="taskForm.expiresAt" />
       </label>
 
+      <!-- <label :class="$style.label">
+        開始日
+        <input type="date" :class="$style.input" />
+      </label> -->
+
       <label :class="$style.label">
         終了日
         <input type="date" :class="$style.input" v-model="taskForm.completedAt" />
@@ -139,7 +144,7 @@ function clearTask() {
   font-size: 14px;
   background: var(--color-background);
   color: var(--color-text);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 
   &::placeholder {
     color: #9ca3af;
@@ -160,7 +165,7 @@ function clearTask() {
   font-weight: 600;
   cursor: pointer;
   line-height: 1;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
   margin-top: 0.5rem;
 
   &[disabled] {
@@ -170,21 +175,21 @@ function clearTask() {
 }
 
 .primary {
-  background: #2563eb;
+  background-color: #2563eb;
   color: #ffffff;
 
   &:hover {
-    background: #1d4ed8;
+    background-color: #1d4ed8;
   }
 }
 
 .secondary {
-  background: #f3f4f6;
+  background-color: #f3f4f6;
   color: #111827;
   border-color: #e5e7eb;
 
   &:hover {
-    background: #e5e7eb;
+    background-color: #e5e7eb;
   }
 }
 

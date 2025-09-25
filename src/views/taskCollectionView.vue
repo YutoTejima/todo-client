@@ -1,56 +1,41 @@
 <script lang="ts" setup>
+import type { TaskEntity } from '@/entities/TaskEntity';
+import { taskRepository } from '@/store';
 import { ref, onMounted, computed } from 'vue';
-
-interface TaskEntity {
-  id: string;
-  title: string;
-  description?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
-  tags?: string[];
-  expiresAt?: string;
-  completedAt?: string;
-}
 
 const status = ref<'idle' | 'pending' | 'success' | 'error'>('idle');
 const errorMessage = ref('');
 const tasks = ref<TaskEntity[]>([]);
 
-async function loadTasks() {
+async function getTasks() {
   status.value = 'pending';
-  errorMessage.value = '';
-  try {
-    const res = await fetch('http://localhost:8787/api/v1/tasks', {
-      method: 'GET',
-      headers: { 'content-type': 'application/json' },
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    tasks.value = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
-    status.value = 'success';
-  } catch (e: any) {
-    status.value = 'error';
-    errorMessage.value = e?.message ?? '読み込みに失敗しました';
-  }
+  tasks.value = await taskRepository.getTasks();
+
+  status.value = 'success';
 }
 
-onMounted(loadTasks);
+getTasks();
 
+const STATUS_LABEL: Record<TaskEntity['status'], string> = {
+  pending: '未着手',
+  in_progress: '進行中',
+  completed: '完了',
+  cancelled: 'キャンセル',
+};
 function statusLabel(s: TaskEntity['status']) {
-  return s === 'pending' ? '未着手' : s === 'in_progress' ? '進行中' : s === 'completed' ? '完了' : 'キャンセル';
+  return STATUS_LABEL[s];
 }
 
-const counts = computed(() => {
-  const c = { pending: 0, in_progress: 0, completed: 0, cancelled: 0, all: 0 };
-  for (const t of tasks.value) {
-    if (t.status === 'pending') c.pending++;
-    else if (t.status === 'in_progress') c.in_progress++;
-    else if (t.status === 'completed') c.completed++;
-    else if (t.status === 'cancelled') c.cancelled++;
-  }
-  c.all = tasks.value.length;
-  return c;
-});
+const counts = computed(() =>
+  tasks.value.reduce(
+    (acc, t) => {
+      acc[t.status]++;
+      acc.all++;
+      return acc;
+    },
+    { pending: 0, in_progress: 0, completed: 0, cancelled: 0, all: 0 },
+  ),
+);
 </script>
 
 <template>
@@ -70,7 +55,7 @@ const counts = computed(() => {
     <p v-else-if="status === 'success' && tasks.length === 0" :class="$style.info">タスクはありません</p>
 
     <ul v-if="status === 'success' && tasks.length > 0" :class="$style.list">
-      <li v-for="t in tasks" :key="t.id" :class="$style.card">
+      <li v-for="t in tasks" :key="t.id" :class="[$style.card, $style['accent_' + t.status]]">
         <div :class="$style.cardHeader">
           <h2 :class="$style.cardTitle">{{ t.title }}</h2>
           <span :class="[$style.badge, $style['status_' + t.status]]">{{ statusLabel(t.status) }}</span>
@@ -141,6 +126,27 @@ const counts = computed(() => {
   border-radius: 10px;
   padding: 0.875rem 1rem;
   background: var(--color-background);
+  border-left: 4px solid transparent;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* 左アクセント（ステータス別） */
+.accent_pending {
+  border-left-color: #e5e7eb;
+}
+.accent_in_progress {
+  border-left-color: #38bdf8;
+}
+.accent_completed {
+  border-left-color: #34d399;
+}
+.accent_cancelled {
+  border-left-color: #fca5a5;
 }
 
 .cardHeader {
@@ -160,6 +166,10 @@ const counts = computed(() => {
   margin: 0.5rem 0 0;
   color: var(--color-text);
   opacity: 0.9;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .tags {
