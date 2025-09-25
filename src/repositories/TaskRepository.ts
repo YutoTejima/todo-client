@@ -25,7 +25,7 @@ export class TaskRepository {
       method: 'POST',
       headers: {
         Accept: 'application/json',
-        'content-type': 'application/json',
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         title: createTaskRequest.title,

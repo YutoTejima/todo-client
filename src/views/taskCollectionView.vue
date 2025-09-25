@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import type { TaskEntity } from '@/entities/TaskEntity';
-import { TaskRepository } from '@/repositories/TaskRepository';
 import { taskRepository } from '@/store';
 import { ref, onMounted, computed } from 'vue';
 
@@ -55,7 +54,7 @@ const counts = computed(() =>
     <p v-else-if="status === 'error'" :class="$style.error">読み込みに失敗しました: {{ errorMessage }}</p>
     <p v-else-if="status === 'success' && tasks.length === 0" :class="$style.info">タスクはありません</p>
 
-    <ul :class="$style.list">
+    <ul v-if="status === 'success' && tasks.length > 0" :class="$style.list">
       <li v-for="t in tasks" :key="t.id" :class="[$style.card, $style['accent_' + t.status]]">
         <div :class="$style.cardHeader">
           <h2 :class="$style.cardTitle">{{ t.title }}</h2>

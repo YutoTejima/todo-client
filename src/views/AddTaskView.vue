@@ -84,11 +84,6 @@ function clearTask() {
         <input type="date" :class="$style.input" v-model="taskForm.expiresAt" />
       </label>
 
-      <!-- <label :class="$style.label">
-        開始日
-        <input type="date" :class="$style.input" />
-      </label> -->
-
       <label :class="$style.label">
         終了日
         <input type="date" :class="$style.input" v-model="taskForm.completedAt" />
@@ -144,7 +139,7 @@ function clearTask() {
   font-size: 14px;
   background: var(--color-background);
   color: var(--color-text);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 
   &::placeholder {
     color: #9ca3af;
@@ -165,7 +160,7 @@ function clearTask() {
   font-weight: 600;
   cursor: pointer;
   line-height: 1;
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
   margin-top: 0.5rem;
 
   &[disabled] {
@@ -175,21 +170,21 @@ function clearTask() {
 }
 
 .primary {
-  background-color: #2563eb;
+  background: #2563eb;
   color: #ffffff;
 
   &:hover {
-    background-color: #1d4ed8;
+    background: #1d4ed8;
   }
 }
 
 .secondary {
-  background-color: #f3f4f6;
+  background: #f3f4f6;
   color: #111827;
   border-color: #e5e7eb;
 
   &:hover {
-    background-color: #e5e7eb;
+    background: #e5e7eb;
   }
 }
 
