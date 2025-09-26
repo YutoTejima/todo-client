@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import TaskDialog from '@/components/TaskDialog.vue';
 import type { TaskEntity } from '@/entities/TaskEntity';
 import { taskRepository } from '@/store';
 import { ref, computed } from 'vue';
@@ -16,6 +17,10 @@ const filteredTasks = computed(() =>
   filter.value === 'all' ? tasks.value : tasks.value.filter(t => t.status === filter.value),
 );
 
+function updataTask(t: TaskEntity) {
+  console.log(t);
+}
+
 async function deleteTask(taskId: string) {
   try {
     await taskRepository.deleteTask(taskId);
@@ -24,9 +29,7 @@ async function deleteTask(taskId: string) {
     if (taskIndex !== -1) {
       tasks.value.splice(taskIndex, 1);
     }
-  } catch {
-    console.error('タスクの削除に失敗しました');
-  }
+  } catch {}
 }
 
 async function getTasks() {
@@ -61,6 +64,7 @@ const counts = computed(() =>
 </script>
 
 <template>
+  <TaskDialog />
   <div :class="$style.container">
     <div :class="$style.headerBar">
       <h1 :class="$style.title">タスク一覧</h1>
@@ -113,13 +117,20 @@ const counts = computed(() =>
       <ul v-else :class="$style.list">
         <li v-for="t in filteredTasks" :key="t.id" :class="[$style.card, $style['accent_' + t.status]]">
           <div :class="$style.cardHeader">
-            <div :class="$style.cardMeta">
+            <div :class="$style.titleRow">
               <h2 :class="$style.cardTitle">{{ t.title }}</h2>
-              <span :class="[$style.badge, $style['status_' + t.status]]">{{ statusLabel(t.status) }}</span>
             </div>
-            <button type="button" :class="[$style.button, $style.danger, $style.small]" @click="deleteTask(t.id)">
-              削除
-            </button>
+            <div :class="$style.metaRow">
+              <span :class="[$style.badge, $style['status_' + t.status]]">{{ statusLabel(t.status) }}</span>
+              <div :class="$style.actions">
+                <button type="button" :class="[$style.button, $style.primary, $style.small]" @click="updataTask(t)">
+                  更新
+                </button>
+                <button type="button" :class="[$style.button, $style.danger, $style.small]" @click="deleteTask(t.id)">
+                  削除
+                </button>
+              </div>
+            </div>
           </div>
           <p v-if="t.description" :class="$style.description">{{ t.description }}</p>
           <div v-if="t.tags?.length" :class="$style.tags">
@@ -221,6 +232,17 @@ const counts = computed(() =>
 
 .cardHeader {
   display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+}
+
+.metaRow {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
@@ -241,6 +263,12 @@ const counts = computed(() =>
   font-size: 16px;
   font-weight: 700;
   margin: 0;
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
 }
 
 .description {
@@ -278,6 +306,7 @@ const counts = computed(() =>
   font-size: 12px;
   font-weight: 700;
   border: 1px solid transparent;
+  white-space: nowrap;
 }
 
 /* status */
@@ -312,6 +341,7 @@ const counts = computed(() =>
   line-height: 1;
   transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
   margin-top: 0.5rem;
+  white-space: nowrap;
 
   &[disabled] {
     opacity: 0.6;
@@ -331,6 +361,15 @@ const counts = computed(() =>
 }
 .primary:hover {
   background: #1d4ed8;
+}
+
+.danger {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+.danger:hover {
+  background: #fecaca;
 }
 
 .ghost {
@@ -362,5 +401,13 @@ const counts = computed(() =>
 }
 .chipActive {
   box-shadow: inset 0 0 0 1px currentColor;
+}
+
+/* 右端のボタン枠（更新・削除） */
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-self: end;
+  white-space: nowrap;
 }
 </style>

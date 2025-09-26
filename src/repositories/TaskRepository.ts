@@ -3,6 +3,7 @@
  */
 
 import type { TaskEntity } from '@/entities/TaskEntity';
+import { resolveComponent } from 'vue';
 
 interface CreateTaskRequest {
   title: string;
@@ -68,5 +69,34 @@ export class TaskRepository {
     if (!response.ok) {
       throw new Error('エラーが発生しました');
     }
+  }
+
+  public async updataTask(updataTaskRequest: CreateTaskRequest): Promise<TaskEntity> {
+    const response = await fetch(`${this.baseUrl}/api/v1/tasks`, {
+      method: 'PATCH',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: updataTaskRequest.title,
+        description: updataTaskRequest.description,
+        status: updataTaskRequest.status,
+        priority: updataTaskRequest.priority || undefined,
+        tags: updataTaskRequest.tags
+          .split(',')
+          .map(tag => tag.trim())
+          .filter(Boolean),
+        expiresAt: updataTaskRequest.expiresAt || undefined,
+        completedAt: updataTaskRequest.completedAt || undefined,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('エラーが発生しました');
+    }
+
+    const data: TaskEntity = await response.json();
+    return data;
   }
 }
