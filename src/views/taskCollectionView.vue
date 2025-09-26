@@ -1,11 +1,33 @@
 <script lang="ts" setup>
 import type { TaskEntity } from '@/entities/TaskEntity';
 import { taskRepository } from '@/store';
-import { ref, onMounted, computed } from 'vue';
+import { ref, computed } from 'vue';
 
 const status = ref<'idle' | 'pending' | 'success' | 'error'>('idle');
 const errorMessage = ref('');
 const tasks = ref<TaskEntity[]>([]);
+
+// フィルタ
+const filter = ref<'all' | TaskEntity['status']>('all');
+function setFilter(f: 'all' | TaskEntity['status']) {
+  filter.value = f;
+}
+const filteredTasks = computed(() =>
+  filter.value === 'all' ? tasks.value : tasks.value.filter(t => t.status === filter.value),
+);
+
+async function deleteTask(taskId: string) {
+  try {
+    await taskRepository.deleteTask(taskId);
+    const taskIndex = tasks.value.findIndex(task => task.id === taskId);
+
+    if (taskIndex !== -1) {
+      tasks.value.splice(taskIndex, 1);
+    }
+  } catch {
+    console.error('タスクの削除に失敗しました');
+  }
+}
 
 async function getTasks() {
   status.value = 'pending';
@@ -40,32 +62,72 @@ const counts = computed(() =>
 
 <template>
   <div :class="$style.container">
-    <h1 :class="$style.title">タスク一覧</h1>
+    <div :class="$style.headerBar">
+      <h1 :class="$style.title">タスク一覧</h1>
+      <RouterLink to="/add-task" :class="[$style.button, $style.primary]"> 新規作成 </RouterLink>
+    </div>
 
-    <div v-if="status === 'success'" :class="$style.stats">
-      <span :class="[$style.badge, $style.status_pending]">未着手: {{ counts.pending }}</span>
-      <span :class="[$style.badge, $style.status_in_progress]">進行中: {{ counts.in_progress }}</span>
-      <span :class="[$style.badge, $style.status_completed]">完了: {{ counts.completed }}</span>
-      <span :class="[$style.badge, $style.status_cancelled]">キャンセル: {{ counts.cancelled }}</span>
-      <span :class="$style.total">合計: {{ counts.all }}</span>
+    <div v-if="status === 'success'" :class="$style.filters">
+      <button type="button" :class="[$style.chip, filter === 'all' && $style.chipActive]" @click="setFilter('all')">
+        すべて ({{ counts.all }})
+      </button>
+      <button
+        type="button"
+        :class="[$style.chip, $style.status_pending, filter === 'pending' && $style.chipActive]"
+        @click="setFilter('pending')"
+      >
+        未着手 ({{ counts.pending }})
+      </button>
+      <button
+        type="button"
+        :class="[$style.chip, $style.status_in_progress, filter === 'in_progress' && $style.chipActive]"
+        @click="setFilter('in_progress')"
+      >
+        進行中 ({{ counts.in_progress }})
+      </button>
+      <button
+        type="button"
+        :class="[$style.chip, $style.status_completed, filter === 'completed' && $style.chipActive]"
+        @click="setFilter('completed')"
+      >
+        完了 ({{ counts.completed }})
+      </button>
+      <button
+        type="button"
+        :class="[$style.chip, $style.status_cancelled, filter === 'cancelled' && $style.chipActive]"
+        @click="setFilter('cancelled')"
+      >
+        キャンセル ({{ counts.cancelled }})
+      </button>
     </div>
 
     <p v-if="status === 'pending'" :class="$style.info">読み込み中...</p>
     <p v-else-if="status === 'error'" :class="$style.error">読み込みに失敗しました: {{ errorMessage }}</p>
-    <p v-else-if="status === 'success' && tasks.length === 0" :class="$style.info">タスクはありません</p>
 
-    <ul v-if="status === 'success' && tasks.length > 0" :class="$style.list">
-      <li v-for="t in tasks" :key="t.id" :class="[$style.card, $style['accent_' + t.status]]">
-        <div :class="$style.cardHeader">
-          <h2 :class="$style.cardTitle">{{ t.title }}</h2>
-          <span :class="[$style.badge, $style['status_' + t.status]]">{{ statusLabel(t.status) }}</span>
-        </div>
-        <p v-if="t.description" :class="$style.description">{{ t.description }}</p>
-        <div v-if="t.tags?.length" :class="$style.tags">
-          <span v-for="tag in t.tags" :key="tag" :class="$style.tag">#{{ tag }}</span>
-        </div>
-      </li>
-    </ul>
+    <template v-if="status === 'success'">
+      <p v-if="filteredTasks.length === 0" :class="$style.empty">
+        条件に一致するタスクがありません。
+        <RouterLink to="/add-task" :class="[$style.button, $style.ghost, $style.small]">新規作成</RouterLink>
+      </p>
+
+      <ul v-else :class="$style.list">
+        <li v-for="t in filteredTasks" :key="t.id" :class="[$style.card, $style['accent_' + t.status]]">
+          <div :class="$style.cardHeader">
+            <div :class="$style.cardMeta">
+              <h2 :class="$style.cardTitle">{{ t.title }}</h2>
+              <span :class="[$style.badge, $style['status_' + t.status]]">{{ statusLabel(t.status) }}</span>
+            </div>
+            <button type="button" :class="[$style.button, $style.danger, $style.small]" @click="deleteTask(t.id)">
+              削除
+            </button>
+          </div>
+          <p v-if="t.description" :class="$style.description">{{ t.description }}</p>
+          <div v-if="t.tags?.length" :class="$style.tags">
+            <span v-for="tag in t.tags" :key="tag" :class="$style.tag">#{{ tag }}</span>
+          </div>
+        </li>
+      </ul>
+    </template>
   </div>
 </template>
 
@@ -80,24 +142,32 @@ const counts = computed(() =>
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
 }
 
+.headerBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
 .title {
   font-size: 24px;
   margin: 0 0 0.5rem 0;
-  text-align: center;
+  text-align: left;
 }
 
-.stats {
+.filters {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  justify-content: center;
+  justify-content: flex-start;
   margin-bottom: 0.75rem;
 }
 
-.total {
-  font-weight: 700;
-  color: #374151;
-  align-self: center;
+.empty {
+  color: #6b7280;
+  font-weight: 600;
+  margin-top: 0.5rem;
 }
 
 .info {
@@ -154,6 +224,17 @@ const counts = computed(() =>
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.cardHeader .button {
+  margin-top: 0;
 }
 
 .cardTitle {
@@ -219,5 +300,67 @@ const counts = computed(() =>
   background: #fee2e2;
   color: #991b1b;
   border-color: #fecaca;
+}
+
+.button {
+  padding: 0.75rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+  margin-top: 0.5rem;
+
+  &[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.small {
+  padding: 0.375rem 0.75rem;
+  font-size: 13px;
+}
+
+.primary {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #1d4ed8;
+}
+.primary:hover {
+  background: #1d4ed8;
+}
+
+.ghost {
+  background: transparent;
+  color: #2563eb;
+  border-color: #93c5fd;
+}
+.ghost:hover {
+  background: #eff6ff;
+}
+
+/* フィルタ用チップ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.chip:hover {
+  background: #f9fafb;
+}
+.chipActive {
+  box-shadow: inset 0 0 0 1px currentColor;
 }
 </style>

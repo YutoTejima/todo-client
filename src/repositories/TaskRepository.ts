@@ -59,4 +59,14 @@ export class TaskRepository {
 
     return data;
   }
+
+  public async deleteTask(taskId: string): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/api/v1/tasks/${taskId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error('エラーが発生しました');
+    }
+  }
 }
