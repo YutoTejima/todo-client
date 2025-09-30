@@ -4,7 +4,7 @@ export interface TaskEntity {
   description?: string;
   status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   priority?: 'low' | 'medium' | 'high' | 'urgent';
-  tags?: string[];
+  tags: string[];
   expiresAt?: string;
   completedAt?: string;
 }

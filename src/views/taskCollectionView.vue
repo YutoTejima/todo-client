@@ -17,8 +17,13 @@ const filteredTasks = computed(() =>
   filter.value === 'all' ? tasks.value : tasks.value.filter(t => t.status === filter.value),
 );
 
-function updataTask(t: TaskEntity) {
-  console.log(t);
+const selectedTask = ref<TaskEntity>();
+
+async function updataTask(t: TaskEntity) {
+  isDialogOpened.value = true;
+
+  // 選択されたタスクを記憶しておく
+  selectedTask.value = t;
 }
 
 async function deleteTask(taskId: string) {
@@ -61,10 +66,18 @@ const counts = computed(() =>
     { pending: 0, in_progress: 0, completed: 0, cancelled: 0, all: 0 },
   ),
 );
+
+const isDialogOpened = ref(false);
+
+function closeDialog() {
+  isDialogOpened.value = false;
+}
 </script>
 
 <template>
-  <TaskDialog />
+  <div v-if="isDialogOpened && selectedTask" :class="$style.modalOverlay">
+    <TaskDialog @close="closeDialog" :task="selectedTask" />
+  </div>
   <div :class="$style.container">
     <div :class="$style.headerBar">
       <h1 :class="$style.title">タスク一覧</h1>
@@ -409,5 +422,17 @@ const counts = computed(() =>
   gap: 0.5rem;
   justify-self: end;
   white-space: nowrap;
+}
+
+/* モーダルの見た目（オーバーレイ＋中央寄せ） */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem; /* 画面が狭い時の余白確保 */
+  z-index: 1000; /* リストより前面に */
 }
 </style>
