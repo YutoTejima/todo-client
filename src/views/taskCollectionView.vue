@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import TaskDialog from '@/components/TaskDialog.vue';
+import TaskDialog, { type TaskForm } from '@/components/TaskDialog.vue';
 import type { TaskEntity } from '@/entities/TaskEntity';
 import { taskRepository } from '@/store';
 import { ref, computed } from 'vue';
@@ -14,16 +14,17 @@ function setFilter(f: 'all' | TaskEntity['status']) {
   filter.value = f;
 }
 const filteredTasks = computed(() =>
-  filter.value === 'all' ? tasks.value : tasks.value.filter(t => t.status === filter.value),
+  filter.value === 'all' ? tasks.value : tasks.value.filter(task => task.status === filter.value),
 );
 
+/** 最後に編集ボタンが押された対象のタスク */
 const selectedTask = ref<TaskEntity>();
 
-async function updataTask(t: TaskEntity) {
+async function openDialog(task: TaskEntity) {
   isDialogOpened.value = true;
 
   // 選択されたタスクを記憶しておく
-  selectedTask.value = t;
+  selectedTask.value = task;
 }
 
 async function deleteTask(taskId: string) {
@@ -46,6 +47,29 @@ async function getTasks() {
 
 getTasks();
 
+async function updataTask(task: TaskForm) {
+  // 選択されたタスクがない場合は何もしない
+  if (!selectedTask.value) {
+    return;
+  }
+
+  // サーバーのタスクを更新する
+  const updatedTask = await taskRepository.updataTask(selectedTask.value.id, task);
+
+  // 更新したタスクを配列に反映する
+  const taskIndex = tasks.value.findIndex(task => task.id === updatedTask.id);
+
+  if (taskIndex !== -1) {
+    tasks.value[taskIndex] = updatedTask;
+  }
+
+  // ダイアログを閉じる
+  isDialogOpened.value = false;
+
+  // タスクを未選択状態にする
+  selectedTask.value = undefined;
+}
+
 const STATUS_LABEL: Record<TaskEntity['status'], string> = {
   pending: '未着手',
   in_progress: '進行中',
@@ -58,8 +82,8 @@ function statusLabel(s: TaskEntity['status']) {
 
 const counts = computed(() =>
   tasks.value.reduce(
-    (acc, t) => {
-      acc[t.status]++;
+    (acc, task) => {
+      acc[task.status]++;
       acc.all++;
       return acc;
     },
@@ -76,7 +100,7 @@ function closeDialog() {
 
 <template>
   <div v-if="isDialogOpened && selectedTask" :class="$style.modalOverlay">
-    <TaskDialog @close="closeDialog" :task="selectedTask" />
+    <TaskDialog @accept="updataTask" @cancel="closeDialog" :task="selectedTask" />
   </div>
   <div :class="$style.container">
     <div :class="$style.headerBar">
@@ -128,26 +152,30 @@ function closeDialog() {
       </p>
 
       <ul v-else :class="$style.list">
-        <li v-for="t in filteredTasks" :key="t.id" :class="[$style.card, $style['accent_' + t.status]]">
+        <li v-for="task in filteredTasks" :key="task.id" :class="[$style.card, $style['accent_' + task.status]]">
           <div :class="$style.cardHeader">
             <div :class="$style.titleRow">
-              <h2 :class="$style.cardTitle">{{ t.title }}</h2>
+              <h2 :class="$style.cardTitle">{{ task.title }}</h2>
             </div>
             <div :class="$style.metaRow">
-              <span :class="[$style.badge, $style['status_' + t.status]]">{{ statusLabel(t.status) }}</span>
+              <span :class="[$style.badge, $style['status_' + task.status]]">{{ statusLabel(task.status) }}</span>
               <div :class="$style.actions">
-                <button type="button" :class="[$style.button, $style.primary, $style.small]" @click="updataTask(t)">
-                  更新
+                <button type="button" :class="[$style.button, $style.primary, $style.small]" @click="openDialog(task)">
+                  編集
                 </button>
-                <button type="button" :class="[$style.button, $style.danger, $style.small]" @click="deleteTask(t.id)">
+                <button
+                  type="button"
+                  :class="[$style.button, $style.danger, $style.small]"
+                  @click="deleteTask(task.id)"
+                >
                   削除
                 </button>
               </div>
             </div>
           </div>
-          <p v-if="t.description" :class="$style.description">{{ t.description }}</p>
-          <div v-if="t.tags?.length" :class="$style.tags">
-            <span v-for="tag in t.tags" :key="tag" :class="$style.tag">#{{ tag }}</span>
+          <p v-if="task.description" :class="$style.description">{{ task.description }}</p>
+          <div v-if="task.tags?.length" :class="$style.tags">
+            <span v-for="tag in task.tags" :key="tag" :class="$style.tag">#{{ tag }}</span>
           </div>
         </li>
       </ul>

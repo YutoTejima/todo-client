@@ -2,7 +2,17 @@
 import type { TaskEntity } from '@/entities/TaskEntity';
 import { reactive, watch } from 'vue';
 
-const taskForm = reactive({
+export interface TaskForm {
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  tags: string;
+  expiresAt: string;
+  completedAt: string;
+}
+
+const taskForm = reactive<TaskForm>({
   title: '',
   description: '',
   status: '',
@@ -33,12 +43,16 @@ watch(
 
 // イベントの定義
 const emits = defineEmits<{
-  (event: 'close'): void;
+  (event: 'accept', newTask: TaskForm): void;
+  (event: 'cancel'): void;
 }>();
 
+function onAccept() {
+  emits('accept', taskForm); // イベントを発火させる
+}
+
 function onClose() {
-  emits('close');
-  console.log(new Date());
+  emits('cancel'); // イベントを発火させる
 }
 </script>
 
@@ -51,8 +65,6 @@ function onClose() {
         タイトル
         <input type="text" :class="$style.input" placeholder="タスク名" v-model="taskForm.title" />
       </label>
-
-      <pre>{{ taskForm }}</pre>
 
       <label :class="$style.label">
         ディスクリプション
@@ -95,7 +107,7 @@ function onClose() {
         <input type="date" :class="$style.input" v-model="taskForm.completedAt" />
       </label>
 
-      <button type="button" :class="[$style.button, $style.primary]">更新</button>
+      <button type="button" :class="[$style.button, $style.primary]" @click="onAccept">更新</button>
 
       <button type="button" :class="[$style.button, $style.secondary]" @click="onClose">キャンセル</button>
 
@@ -107,13 +119,17 @@ function onClose() {
 
 <style lang="scss" module>
 .container {
+  width: 100%;
   max-width: 640px;
-  margin: 0 auto;
+  margin: 2vh auto;
   padding: 2rem;
   background: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  max-height: 85vh;
+  overflow: auto;
 }
 
 .title {
@@ -207,5 +223,25 @@ function onClose() {
   color: #dc2626;
   font-weight: 600;
   margin-top: 0.5rem;
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .title {
+    font-size: 20px;
+    margin-bottom: 1rem;
+  }
+
+  .form {
+    gap: 0.75rem;
+  }
+
+  .button {
+    font-size: 14px;
+    padding: 0.625rem 0.875rem;
+  }
 }
 </style>

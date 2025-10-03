@@ -15,6 +15,16 @@ interface CreateTaskRequest {
   completedAt: string;
 }
 
+interface UpdataTaskRequest {
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  tags: string;
+  expiresAt: string;
+  completedAt: string;
+}
+
 export class TaskRepository {
   private readonly baseUrl: string;
   public constructor(baseUrl: string) {
@@ -61,19 +71,9 @@ export class TaskRepository {
     return data;
   }
 
-  public async deleteTask(taskId: string): Promise<void> {
+  public async updataTask(taskId: string, updataTaskRequest: UpdataTaskRequest): Promise<TaskEntity> {
     const response = await fetch(`${this.baseUrl}/api/v1/tasks/${taskId}`, {
-      method: 'DELETE',
-    });
-
-    if (!response.ok) {
-      throw new Error('エラーが発生しました');
-    }
-  }
-
-  public async updataTask(updataTaskRequest: CreateTaskRequest): Promise<TaskEntity> {
-    const response = await fetch(`${this.baseUrl}/api/v1/tasks`, {
-      method: 'PATCH',
+      method: 'PUT',
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
@@ -98,5 +98,15 @@ export class TaskRepository {
 
     const data: TaskEntity = await response.json();
     return data;
+  }
+
+  public async deleteTask(taskId: string): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/api/v1/tasks/${taskId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error('エラーが発生しました');
+    }
   }
 }
