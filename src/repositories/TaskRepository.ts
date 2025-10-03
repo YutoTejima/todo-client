@@ -14,6 +14,16 @@ interface CreateTaskRequest {
   completedAt: string;
 }
 
+interface UpdataTaskRequest {
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  tags: string;
+  expiresAt: string;
+  completedAt: string;
+}
+
 export class TaskRepository {
   private readonly baseUrl: string;
   public constructor(baseUrl: string) {
@@ -57,6 +67,35 @@ export class TaskRepository {
     });
     const data: TaskEntity[] = await response.json();
 
+    return data;
+  }
+
+  public async updataTask(taskId: string, updataTaskRequest: UpdataTaskRequest): Promise<TaskEntity> {
+    const response = await fetch(`${this.baseUrl}/api/v1/tasks/${taskId}`, {
+      method: 'PUT',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: updataTaskRequest.title,
+        description: updataTaskRequest.description,
+        status: updataTaskRequest.status,
+        priority: updataTaskRequest.priority || undefined,
+        tags: updataTaskRequest.tags
+          .split(',')
+          .map(tag => tag.trim())
+          .filter(Boolean),
+        expiresAt: updataTaskRequest.expiresAt || undefined,
+        completedAt: updataTaskRequest.completedAt || undefined,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('エラーが発生しました');
+    }
+
+    const data: TaskEntity = await response.json();
     return data;
   }
 

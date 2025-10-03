@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import TaskDialog, { type TaskForm } from '@/components/TaskDialog.vue';
 import type { TaskEntity } from '@/entities/TaskEntity';
 import { taskRepository } from '@/store';
 import { ref, computed } from 'vue';
@@ -13,8 +14,18 @@ function setFilter(f: 'all' | TaskEntity['status']) {
   filter.value = f;
 }
 const filteredTasks = computed(() =>
-  filter.value === 'all' ? tasks.value : tasks.value.filter(t => t.status === filter.value),
+  filter.value === 'all' ? tasks.value : tasks.value.filter(task => task.status === filter.value),
 );
+
+/** 最後に編集ボタンが押された対象のタスク */
+const selectedTask = ref<TaskEntity>();
+
+async function openDialog(task: TaskEntity) {
+  isDialogOpened.value = true;
+
+  // 選択されたタスクを記憶しておく
+  selectedTask.value = task;
+}
 
 async function deleteTask(taskId: string) {
   try {
@@ -24,9 +35,7 @@ async function deleteTask(taskId: string) {
     if (taskIndex !== -1) {
       tasks.value.splice(taskIndex, 1);
     }
-  } catch {
-    console.error('タスクの削除に失敗しました');
-  }
+  } catch {}
 }
 
 async function getTasks() {
@@ -37,6 +46,29 @@ async function getTasks() {
 }
 
 getTasks();
+
+async function updataTask(task: TaskForm) {
+  // 選択されたタスクがない場合は何もしない
+  if (!selectedTask.value) {
+    return;
+  }
+
+  // サーバーのタスクを更新する
+  const updatedTask = await taskRepository.updataTask(selectedTask.value.id, task);
+
+  // 更新したタスクを配列に反映する
+  const taskIndex = tasks.value.findIndex(task => task.id === updatedTask.id);
+
+  if (taskIndex !== -1) {
+    tasks.value[taskIndex] = updatedTask;
+  }
+
+  // ダイアログを閉じる
+  isDialogOpened.value = false;
+
+  // タスクを未選択状態にする
+  selectedTask.value = undefined;
+}
 
 const STATUS_LABEL: Record<TaskEntity['status'], string> = {
   pending: '未着手',
@@ -50,17 +82,26 @@ function statusLabel(s: TaskEntity['status']) {
 
 const counts = computed(() =>
   tasks.value.reduce(
-    (acc, t) => {
-      acc[t.status]++;
+    (acc, task) => {
+      acc[task.status]++;
       acc.all++;
       return acc;
     },
     { pending: 0, in_progress: 0, completed: 0, cancelled: 0, all: 0 },
   ),
 );
+
+const isDialogOpened = ref(false);
+
+function closeDialog() {
+  isDialogOpened.value = false;
+}
 </script>
 
 <template>
+  <div v-if="isDialogOpened && selectedTask" :class="$style.modalOverlay">
+    <TaskDialog @accept="updataTask" @cancel="closeDialog" :task="selectedTask" />
+  </div>
   <div :class="$style.container">
     <div :class="$style.headerBar">
       <h1 :class="$style.title">タスク一覧</h1>
@@ -111,19 +152,30 @@ const counts = computed(() =>
       </p>
 
       <ul v-else :class="$style.list">
-        <li v-for="t in filteredTasks" :key="t.id" :class="[$style.card, $style['accent_' + t.status]]">
+        <li v-for="task in filteredTasks" :key="task.id" :class="[$style.card, $style['accent_' + task.status]]">
           <div :class="$style.cardHeader">
-            <div :class="$style.cardMeta">
-              <h2 :class="$style.cardTitle">{{ t.title }}</h2>
-              <span :class="[$style.badge, $style['status_' + t.status]]">{{ statusLabel(t.status) }}</span>
+            <div :class="$style.titleRow">
+              <h2 :class="$style.cardTitle">{{ task.title }}</h2>
             </div>
-            <button type="button" :class="[$style.button, $style.danger, $style.small]" @click="deleteTask(t.id)">
-              削除
-            </button>
+            <div :class="$style.metaRow">
+              <span :class="[$style.badge, $style['status_' + task.status]]">{{ statusLabel(task.status) }}</span>
+              <div :class="$style.actions">
+                <button type="button" :class="[$style.button, $style.primary, $style.small]" @click="openDialog(task)">
+                  編集
+                </button>
+                <button
+                  type="button"
+                  :class="[$style.button, $style.danger, $style.small]"
+                  @click="deleteTask(task.id)"
+                >
+                  削除
+                </button>
+              </div>
+            </div>
           </div>
-          <p v-if="t.description" :class="$style.description">{{ t.description }}</p>
-          <div v-if="t.tags?.length" :class="$style.tags">
-            <span v-for="tag in t.tags" :key="tag" :class="$style.tag">#{{ tag }}</span>
+          <p v-if="task.description" :class="$style.description">{{ task.description }}</p>
+          <div v-if="task.tags?.length" :class="$style.tags">
+            <span v-for="tag in task.tags" :key="tag" :class="$style.tag">#{{ tag }}</span>
           </div>
         </li>
       </ul>
@@ -221,6 +273,17 @@ const counts = computed(() =>
 
 .cardHeader {
   display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+}
+
+.metaRow {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
@@ -241,6 +304,12 @@ const counts = computed(() =>
   font-size: 16px;
   font-weight: 700;
   margin: 0;
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
 }
 
 .description {
@@ -278,6 +347,7 @@ const counts = computed(() =>
   font-size: 12px;
   font-weight: 700;
   border: 1px solid transparent;
+  white-space: nowrap;
 }
 
 /* status */
@@ -312,6 +382,7 @@ const counts = computed(() =>
   line-height: 1;
   transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
   margin-top: 0.5rem;
+  white-space: nowrap;
 
   &[disabled] {
     opacity: 0.6;
@@ -331,6 +402,15 @@ const counts = computed(() =>
 }
 .primary:hover {
   background: #1d4ed8;
+}
+
+.danger {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+.danger:hover {
+  background: #fecaca;
 }
 
 .ghost {
@@ -362,5 +442,25 @@ const counts = computed(() =>
 }
 .chipActive {
   box-shadow: inset 0 0 0 1px currentColor;
+}
+
+/* 右端のボタン枠（更新・削除） */
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-self: end;
+  white-space: nowrap;
+}
+
+/* モーダルの見た目（オーバーレイ＋中央寄せ） */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem; /* 画面が狭い時の余白確保 */
+  z-index: 1000; /* リストより前面に */
 }
 </style>
