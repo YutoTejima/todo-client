@@ -3,7 +3,6 @@
  */
 
 import type { TaskEntity } from '@/entities/TaskEntity';
-import { resolveComponent } from 'vue';
 
 interface CreateTaskRequest {
   title: string;
