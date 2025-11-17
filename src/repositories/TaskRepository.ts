@@ -3,6 +3,7 @@
  */
 
 import type { TaskEntity } from '@/entities/TaskEntity';
+import Cookies from 'js-cookie';
 
 interface CreateTaskRequest {
   title: string;
@@ -31,10 +32,13 @@ export class TaskRepository {
   }
 
   public async createTask(createTaskRequest: CreateTaskRequest): Promise<TaskEntity> {
+    const accessToken = Cookies.get('accessToken');
+
     const response = await fetch(`${this.baseUrl}/api/v1/tasks`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -60,9 +64,11 @@ export class TaskRepository {
   }
 
   public async getTasks(): Promise<TaskEntity[]> {
+    const accessToken = Cookies.get('accessToken');
     const response = await fetch(`${this.baseUrl}/api/v1/tasks`, {
       headers: {
         Accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
       },
     });
     const data: TaskEntity[] = await response.json();
@@ -71,10 +77,12 @@ export class TaskRepository {
   }
 
   public async updataTask(taskId: string, updataTaskRequest: UpdataTaskRequest): Promise<TaskEntity> {
+    const accessToken = Cookies.get('accessToken');
     const response = await fetch(`${this.baseUrl}/api/v1/tasks/${taskId}`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: {
         Accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -100,8 +108,13 @@ export class TaskRepository {
   }
 
   public async deleteTask(taskId: string): Promise<void> {
+    const accessToken = Cookies.get('accessToken');
     const response = await fetch(`${this.baseUrl}/api/v1/tasks/${taskId}`, {
       method: 'DELETE',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
     });
 
     if (!response.ok) {

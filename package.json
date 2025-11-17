@@ -16,6 +16,8 @@
 		"cf-typegen": "wrangler types"
 	},
 	"dependencies": {
+		"@types/js-cookie": "^3.0.6",
+		"js-cookie": "^3.0.5",
 		"vue": "^3.5.18",
 		"vue-router": "^4.5.1"
 	},

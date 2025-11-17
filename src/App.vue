@@ -22,6 +22,8 @@ const getName = async () => {
       <p>Edit <code>server/index.ts</code> to change what the API gets</p>
       <nav>
         <RouterLink to="/">Home</RouterLink>
+        <RouterLink to="/signup">Signup</RouterLink>
+        <RouterLink to="/login">Login</RouterLink>
         <RouterLink to="/add-task">Add Task</RouterLink>
         <RouterLink to="/tasks">Tasks</RouterLink>
       </nav>

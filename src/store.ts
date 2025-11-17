@@ -1,3 +1,6 @@
+import { AuthRepository } from '@/repositories/AuthRepository';
 import { TaskRepository } from '@/repositories/TaskRepository';
 
-export const taskRepository = new TaskRepository('http://localhost:8787');
+const baseUrl = 'http://localhost:8787';
+export const authRepository = new AuthRepository(baseUrl);
+export const taskRepository = new TaskRepository(baseUrl);
