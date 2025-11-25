@@ -34,7 +34,7 @@ watch(
     taskForm.description = newProps.task.description ?? '';
     taskForm.status = newProps.task.status;
     taskForm.priority = newProps.task.priority ?? '';
-    taskForm.tags = newProps.task.tags.join(',');
+    taskForm.tags = newProps.task.tags.map(t => t.name).join(',');
     taskForm.expiresAt = newProps.task.expiresAt ?? '';
     taskForm.completedAt = newProps.task.completedAt ?? '';
   },

@@ -27,7 +27,7 @@ async function openDialog(task: TaskEntity) {
   selectedTask.value = task;
 }
 
-async function deleteTask(taskId: string) {
+async function deleteTask(taskId: number) {
   try {
     await taskRepository.deleteTask(taskId);
     const taskIndex = tasks.value.findIndex(task => task.id === taskId);
@@ -175,7 +175,10 @@ function closeDialog() {
           </div>
           <p v-if="task.description" :class="$style.description">{{ task.description }}</p>
           <div v-if="task.tags?.length" :class="$style.tags">
-            <span v-for="tag in task.tags" :key="tag" :class="$style.tag">#{{ tag }}</span>
+            <span v-for="tag in task.tags" :key="tag.id" :class="$style.tag">
+              <span :class="$style.tagDot" :style="{ backgroundColor: tag.color }"></span>
+              {{ tag.name }}
+            </span>
           </div>
         </li>
       </ul>
@@ -331,11 +334,21 @@ function closeDialog() {
 
 .tag {
   font-size: 12px;
-  background: #f3f4f6;
+  background: #f9fafb;
   color: #374151;
-  padding: 0.25rem 0.5rem;
+  padding: 0.25rem 0.625rem;
   border-radius: 9999px;
   border: 1px solid #e5e7eb;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.tagDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
 }
 
 .badge {

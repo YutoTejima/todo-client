@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { authRepository } from '@/store';
+import { authRepository, userStore } from '@/store';
 import { reactive, ref, resolveComponent } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -33,6 +33,7 @@ async function login() {
   try {
     await authRepository.login(form.email, form.password);
     status.value = 'success';
+    userStore.value = await authRepository.me();
 
     await router.push('/tasks');
   } catch (error) {

@@ -2,6 +2,7 @@
 import { RouterLink, RouterView } from 'vue-router';
 import HelloWorld from './components/HelloWorld.vue';
 import { ref } from 'vue';
+import { userStore } from './store';
 
 const name = ref('Unknown');
 
@@ -18,14 +19,19 @@ const getName = async () => {
 
     <div class="wrapper">
       <HelloWorld msg="You did it!" />
-      <button class="green" @click="getName" aria-label="get name">Name from API is: {{ name }}</button>
-      <p>Edit <code>server/index.ts</code> to change what the API gets</p>
+      <p>Welcome, {{ userStore?.email }}</p>
       <nav>
         <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/signup">Signup</RouterLink>
-        <RouterLink to="/login">Login</RouterLink>
-        <RouterLink to="/add-task">Add Task</RouterLink>
-        <RouterLink to="/tasks">Tasks</RouterLink>
+        <template v-if="!userStore">
+          <RouterLink to="/signup">Signup</RouterLink>
+          <RouterLink to="/login">Login</RouterLink>
+        </template>
+
+        <template v-else>
+          <RouterLink to="/add-task">Add Task</RouterLink>
+          <RouterLink to="/tasks">Tasks</RouterLink>
+          <RouterLink to="/logout">Logout</RouterLink>
+        </template>
       </nav>
     </div>
   </header>

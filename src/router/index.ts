@@ -19,12 +19,16 @@ const router = createRouter({
       component: () => import('../views/LoginView.vue'),
     },
     {
+      path: '/logout',
+      component: () => import('../views/LogoutView.vue'),
+    },
+    {
       path: '/add-task',
       component: () => import('../views/AddTaskView.vue'),
     },
     {
       path: '/tasks',
-      component: () => import('../views/taskCollectionView.vue'),
+      component: () => import('../views/TaskCollectionView.vue'),
     },
   ],
 });

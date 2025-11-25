@@ -1,3 +1,4 @@
+import type { SafeUserEntity, UserEntity } from '@/entities/UserEntity';
 import Cookies from 'js-cookie';
 
 interface LoginResponse {
@@ -12,7 +13,7 @@ export class AuthRepository {
   }
 
   public async signup(email: string, password: string): Promise<void> {
-    const response = await fetch('http://localhost:8787/api/v1/users', {
+    const response = await fetch(`${this.baseUrl}/api/v1/users`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -27,7 +28,7 @@ export class AuthRepository {
   }
 
   public async login(email: string, password: string): Promise<LoginResponse> {
-    const response = await fetch('http://localhost:8787/api/v1/auth/login', {
+    const response = await fetch(`${this.baseUrl}/api/v1/auth/login`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -43,6 +44,43 @@ export class AuthRepository {
     const data: LoginResponse = await response.json();
 
     Cookies.set('accessToken', data.accessToken);
+
+    return data;
+  }
+
+  public async logout(): Promise<void> {
+    const accessToken = Cookies.get('accessToken');
+
+    const response = await fetch(`${this.baseUrl}/api/v1/auth/logout`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Logout failed');
+    }
+
+    Cookies.remove('accessToken');
+  }
+
+  public async me(): Promise<Omit<SafeUserEntity, 'password'>> {
+    const accessToken = Cookies.get('accessToken');
+
+    const response = await fetch(`${this.baseUrl}/api/v1/auth/me`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Unauthorized');
+    }
+
+    const data: Omit<SafeUserEntity, 'password'> = await response.json();
 
     return data;
   }
