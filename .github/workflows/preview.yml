@@ -1,0 +1,35 @@
+name: Build Check
+
+# いつ Github Actions が実行されるかを指定する
+on:
+  push:
+
+# 実行する job を指定する
+jobs:
+  # 実行する job の名前を指定する
+  build:
+    # 実行する環境を指定する
+    runs-on: ubuntu-latest
+
+    # 実行する最大時間を指定する
+    timeout-minutes: 10
+
+    # 実行する各ステップを指定する
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: PWD
+        run: pwd

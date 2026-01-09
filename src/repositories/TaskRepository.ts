@@ -3,6 +3,7 @@
  */
 
 import type { TaskEntity, Tag } from '@/entities/TaskEntity';
+import { AuthRepository } from '@/repositories/AuthRepository';
 import Cookies from 'js-cookie';
 
 interface CreateTaskRequest {
@@ -53,8 +54,10 @@ interface ApiTask {
 
 export class TaskRepository {
   private readonly baseUrl: string;
+  private readonly authRepository: AuthRepository;
   public constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
+    this.authRepository = new AuthRepository(baseUrl);
   }
 
   private mapApiTaskToUi(apiTask: ApiTask): TaskEntity {
@@ -76,18 +79,15 @@ export class TaskRepository {
   }
 
   public async createTask(createTaskRequest: CreateTaskRequest): Promise<TaskEntity> {
-    const accessToken = Cookies.get('accessToken');
-
     const statusMap: Record<string, string> = {
       in_progress: 'inProgress',
     };
     const apiStatus = statusMap[createTaskRequest.status] || createTaskRequest.status;
 
-    const response = await fetch(`${this.baseUrl}/api/v1/tasks`, {
+    const response = await this.authRepository.requestWithAuth(`${this.baseUrl}/api/v1/tasks`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
-        Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -113,11 +113,9 @@ export class TaskRepository {
   }
 
   public async getTasks(): Promise<TaskEntity[]> {
-    const accessToken = Cookies.get('accessToken');
-    const response = await fetch(`${this.baseUrl}/api/v1/tasks`, {
+    const response = await this.authRepository.requestWithAuth(`${this.baseUrl}/api/v1/tasks`, {
       headers: {
         Accept: 'application/json',
-        Authorization: `Bearer ${accessToken}`,
       },
     });
 
@@ -131,18 +129,15 @@ export class TaskRepository {
   }
 
   public async updataTask(taskId: number, updataTaskRequest: UpdataTaskRequest): Promise<TaskEntity> {
-    const accessToken = Cookies.get('accessToken');
-
     const statusMap: Record<string, string> = {
       in_progress: 'inProgress',
     };
     const apiStatus = statusMap[updataTaskRequest.status] || updataTaskRequest.status;
 
-    const response = await fetch(`${this.baseUrl}/api/v1/tasks/${taskId}`, {
+    const response = await this.authRepository.requestWithAuth(`${this.baseUrl}/api/v1/tasks/${taskId}`, {
       method: 'PATCH',
       headers: {
         Accept: 'application/json',
-        Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -168,12 +163,10 @@ export class TaskRepository {
   }
 
   public async deleteTask(taskId: number): Promise<void> {
-    const accessToken = Cookies.get('accessToken');
-    const response = await fetch(`${this.baseUrl}/api/v1/tasks/${taskId}`, {
+    const response = await this.authRepository.requestWithAuth(`${this.baseUrl}/api/v1/tasks/${taskId}`, {
       method: 'DELETE',
       headers: {
         Accept: 'application/json',
-        Authorization: `Bearer ${accessToken}`,
       },
     });
 
