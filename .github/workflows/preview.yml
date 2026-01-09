@@ -1,6 +1,6 @@
 name: Build Check
 
-# いつ Github Actions が実行されるかを指定する
+# いつ GitHub Actions が実行されるかを指定する
 on:
   push:
 
